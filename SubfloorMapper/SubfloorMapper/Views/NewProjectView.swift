@@ -47,6 +47,7 @@ struct NewProjectView: View {
                         Label("Clear the floor and sweep up debris.", systemImage: "1.circle")
                         Label("Hold the phone about waist height, pointed down.", systemImage: "2.circle")
                         Label("Walk slowly in overlapping passes until the map fills in.", systemImage: "3.circle")
+                        Label("Highs and lows are painted on the floor in the camera. Tap Pause, walk to each pin and chalk-mark it.", systemImage: "4.circle")
                     } header: {
                         Text("Scanning")
                     } footer: {

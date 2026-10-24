@@ -1,4 +1,3 @@
-import ARKit
 import SubfloorCore
 import SwiftUI
 
@@ -9,10 +8,12 @@ struct ScanView: View {
 
     @Environment(\.dismiss) private var dismiss
     @State private var scanner = FloorScanner()
+    @State private var overlay: MapLayer? = .heights
 
     var body: some View {
         ZStack {
-            ARCameraView(session: scanner.session)
+            ARCameraView(session: scanner.session, report: scanner.preview, version: scanner.previewVersion,
+                         floorLevel: scanner.floorLevel, layer: overlay, units: units)
                 .ignoresSafeArea()
 
             VStack(spacing: 12) {
@@ -22,6 +23,14 @@ struct ScanView: View {
                     .padding(12)
                     .frame(maxWidth: .infinity)
                     .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 12))
+
+                Picker("Show on floor", selection: $overlay) {
+                    Text("Off").tag(MapLayer?.none)
+                    Text("Highs & lows").tag(MapLayer?.some(.heights))
+                    Text("Grind / fill").tag(MapLayer?.some(.actions))
+                }
+                .pickerStyle(.segmented)
+                .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 8))
 
                 Spacer()
 
@@ -71,19 +80,4 @@ struct ScanView: View {
         .onDisappear { scanner.stop() }
         .statusBarHidden()
     }
-}
-
-/// Live camera feed for the scan. The scanner owns the session; this view only shows it.
-struct ARCameraView: UIViewRepresentable {
-    let session: ARSession
-
-    func makeUIView(context: Context) -> ARSCNView {
-        let view = ARSCNView(frame: .zero)
-        view.session = session
-        view.automaticallyUpdatesLighting = false
-        view.rendersCameraGrain = false
-        return view
-    }
-
-    func updateUIView(_ uiView: ARSCNView, context: Context) {}
 }

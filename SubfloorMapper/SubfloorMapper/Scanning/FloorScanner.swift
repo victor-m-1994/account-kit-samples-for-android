@@ -20,8 +20,13 @@ final class FloorScanner: NSObject, ARSessionDelegate {
     private(set) var guidance = "Point the camera at the floor and move slowly."
     private(set) var sampleCount = 0
     private(set) var coveredArea = 0.0
+    /// Live analysis in raw world coordinates (x = world X, y = world Z), so it can be drawn on the floor.
     private(set) var preview: FlatnessReport?
-    private(set) var foundFloor = false
+    /// Bumps every time `preview` changes, so the AR overlay only rebuilds when it has to.
+    private(set) var previewVersion = 0
+    /// World height (Y) of the detected floor.
+    private(set) var floorLevel: Float?
+    var foundFloor: Bool { floorLevel != nil }
 
     @ObservationIgnored let session = ARSession()
     @ObservationIgnored var spec = FlatnessSpec.threeSixteenthsPerTenFeet
@@ -62,10 +67,11 @@ final class FloorScanner: NSObject, ARSessionDelegate {
             self.capturing = true
         }
         phase = .findingFloor
-        foundFloor = false
+        floorLevel = nil
         sampleCount = 0
         coveredArea = 0
         preview = nil
+        previewVersion += 1
     }
 
     func setPaused(_ paused: Bool) {
@@ -101,8 +107,9 @@ final class FloorScanner: NSObject, ARSessionDelegate {
                 publish(guidance: "Point the camera at the floor and move slowly.")
                 return
             }
+            let level = floorHeight
             DispatchQueue.main.async {
-                self.foundFloor = true
+                self.floorLevel = level
                 if self.phase == .findingFloor { self.phase = .scanning }
             }
         }
@@ -142,7 +149,10 @@ final class FloorScanner: NSObject, ARSessionDelegate {
             DispatchQueue.global(qos: .utility).async {
                 let report = ElevationGrid.binning(points, cellSize: Length.inches(2), interpolationRadius: Length.inches(4))
                     .map { FlatnessAnalyzer.analyze($0, spec: spec, minimumHotspotCells: 3) }
-                DispatchQueue.main.async { self.preview = report }
+                DispatchQueue.main.async {
+                    self.preview = report
+                    self.previewVersion += 1
+                }
                 self.queue.async { self.previewInFlight = false }
             }
         }

@@ -19,6 +19,10 @@ passes. Every depth pixel that lands on the floor is projected into gravity-alig
 averaged into 1" cells, so each cell ends up with dozens to hundreds of samples. A live mini-map shows
 coverage and the worst gap so far. When you tap Done, the scan is squared up to the walls.
 
+The camera view also paints the live map **onto the real floor**: highs and lows (or grind and fill)
+are laid over the floor at its detected height, and each H/L spot gets a pin labeled with its height
+or depth. Tap **Pause** to stop collecting, walk to each pin, and chalk-mark the spot.
+
 **Laser level grid:** pick a starting corner (A1), chalk a grid (2' is a good default), set up a
 rotating or line laser, then at each point read the tape where the laser line crosses it. The app
 walks you through the points in a back-and-forth order, takes job-site input like `1 3/16` or
@@ -85,6 +89,7 @@ Packages/SubfloorCore/            Analysis engine + unit tests (platform-indepen
   Units.swift                     Fractional-inch parsing and formatting
 SubfloorMapper/
   Scanning/FloorScanner.swift     ARKit depth → floor heights
+  Scanning/FloorOverlay.swift     Paints the live map and spot pins onto the floor (SceneKit)
   Views/                          SwiftUI screens (list, scan, manual entry, results, PDF)
   Support/                        Heatmap rendering, analysis glue
 ```
@@ -94,6 +99,8 @@ SubfloorMapper/
 - LiDAR depth isn't survey-grade. Averaging removes most random noise, but tracking drift over a
   long scan and shiny or very dark floors can bias the result. Treat LiDAR as a way to find problem
   areas, and confirm anything borderline with a straightedge or the laser grid.
+- The on-floor overlay only works during the scan. Saved scans can't be shown on the floor again
+  later, because that would need ARKit to relocalize to the saved world map.
 - Each scan has to cover the whole floor in one session, because separate scans can't be stitched
   together yet.
 - Volume and bag counts are estimates. Patch yield varies a lot between products.
